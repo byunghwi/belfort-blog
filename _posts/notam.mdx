@@ -1,0 +1,54 @@
+---
+title: "Openlayers, Turf.js 를 사용한 NOTAM 렌더링"
+excerpt: "OpenLayers, Turf.js 를 활용하여 국토정보플랫폼 LX 지도 레이어 생성 및 도형 렌더링"
+coverImage: "/assets/notam/notam.png"
+date: "2020-03-16T05:35:07.322Z"
+author:
+  name: Byunghwi Ko
+---
+
+NOTAM은 "Notice to Airmen"의 약자로, 항공 운항에 중요한 정보를 전달하기 위해 발행되는 공식 통지서. NOTAM은 항로, 공항, 항공기 관련 시설의 상태나 일시적인 변경 사항, 위험 요소 등 항공기의 안전한 운항에 영향을 줄 수 있는 정보를 포함. 조종사, 항공 관제사, 항공사 운영자 등 항공업계 종사자들이 비행 계획을 세우기 전에 반드시 확인해야 하는 중요한 문서
+
+
+### 구현 목적 및 방법
+
+**Why**: AIM 항공정보통합관리의 항공고시보(NOTAM) 정보를 API로 호출 및 지도에 표출하기 위함
+
+**How:** `OpenLayers`, `Turf.js` 를 활용하여 국토정보플랫폼 LX 지도 레이어 생성 및 도형 렌더링
+
+**AIM 항공정보통합관리의 항공고시보(NOTAM)**
+
+![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/4f0d5393-47bd-4771-a2df-7854952c7cd3/9189409a-55c7-40b1-b2f4-165e15528ddf/Untitled.png)
+
+![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/4f0d5393-47bd-4771-a2df-7854952c7cd3/2bb0d891-849c-496e-8796-7b13e47c4db4/Untitled.png)
+
+---
+
+### 구현 결과 화면
+
+- **Image 1**
+
+![notam.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/4f0d5393-47bd-4771-a2df-7854952c7cd3/d48e1bf9-258c-4587-a6bb-6ae8a540b69c/notam.png)
+
+<aside>
+◾ NOTAM 정보를 기반으로 도식화, 동일 좌표 NOTAM은 클러스터링하여 클릭 시  해당 좌표에 포함된 여러 개의 NOTAM 포인트 표출
+
+</aside>
+
+- **Image 2**
+
+![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/4f0d5393-47bd-4771-a2df-7854952c7cd3/9e1d664c-5639-425a-b636-7579d0d01bc3/Untitled.png)
+
+<aside>
+◾ Turf.js 라이브러리를 사용하여 semicircle(반원) 에서 원하는 도형만큼 제외한 차집합 도식 렌더링(보라색 도형).
+
+</aside>
+
+- **Image 3**
+
+![image.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/4f0d5393-47bd-4771-a2df-7854952c7cd3/f916868d-edbf-4583-8973-5d0018c85193/image.png)
+
+<aside>
+◾ 개별 아이콘 클릭 시 NOTAM 정보 팝업 Overlay표출
+
+</aside>
