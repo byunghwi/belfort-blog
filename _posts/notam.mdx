@@ -6,9 +6,25 @@ date: "2020-03-16T05:35:07.322Z"
 author:
   name: Byunghwi Ko
 ---
+# Openlayers, Turf.js 를 사용한 NOTAM 렌더링
 
-NOTAM은 "Notice to Airmen"의 약자로, 항공 운항에 중요한 정보를 전달하기 위해 발행되는 공식 통지서. NOTAM은 항로, 공항, 항공기 관련 시설의 상태나 일시적인 변경 사항, 위험 요소 등 항공기의 안전한 운항에 영향을 줄 수 있는 정보를 포함. 조종사, 항공 관제사, 항공사 운영자 등 항공업계 종사자들이 비행 계획을 세우기 전에 반드시 확인해야 하는 중요한 문서
+Created: 2024년 8월 9일 오후 1:46
+Tags: Openlayers, Turf.js
 
+### 들어가기 전
+
+<aside>
+💡 **NOTAM**은 "Notice to Airmen"의 약자로, 항공 운항에 중요한 정보를 전달하기 위해 발행되는 공식 통지서. NOTAM은 항로, 공항, 항공기 관련 시설의 상태나 일시적인 변경 사항, 위험 요소 등 항공기의 안전한 운항에 영향을 줄 수 있는 정보를 포함. 조종사, 항공 관제사, 항공사 운영자 등 항공업계 종사자들이 비행 계획을 세우기 전에 반드시 확인해야 하는 중요한 문서
+
+</aside>
+
+<aside>
+💡 **Turf.js**는 지리 공간 데이터를 다루기 위한 강력한 JavaScript 라이브러리
+  https://turfjs.org/
+
+</aside>
+
+---
 
 ### 구현 목적 및 방법
 
@@ -16,11 +32,13 @@ NOTAM은 "Notice to Airmen"의 약자로, 항공 운항에 중요한 정보를 �
 
 **How:** `OpenLayers`, `Turf.js` 를 활용하여 국토정보플랫폼 LX 지도 레이어 생성 및 도형 렌더링
 
+---
+
 **AIM 항공정보통합관리의 항공고시보(NOTAM)**
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/4f0d5393-47bd-4771-a2df-7854952c7cd3/9189409a-55c7-40b1-b2f4-165e15528ddf/Untitled.png)
+![aim_notam1](/assets/notam/aim_notam1.png)
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/4f0d5393-47bd-4771-a2df-7854952c7cd3/2bb0d891-849c-496e-8796-7b13e47c4db4/Untitled.png)
+![aim_notam2](/assets/notam/aim_notam2.png)
 
 ---
 
@@ -28,7 +46,7 @@ NOTAM은 "Notice to Airmen"의 약자로, 항공 운항에 중요한 정보를 �
 
 - **Image 1**
 
-![notam.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/4f0d5393-47bd-4771-a2df-7854952c7cd3/d48e1bf9-258c-4587-a6bb-6ae8a540b69c/notam.png)
+![notam.png](/assets/notam/notam.png)
 
 <aside>
 ◾ NOTAM 정보를 기반으로 도식화, 동일 좌표 NOTAM은 클러스터링하여 클릭 시  해당 좌표에 포함된 여러 개의 NOTAM 포인트 표출
@@ -37,7 +55,7 @@ NOTAM은 "Notice to Airmen"의 약자로, 항공 운항에 중요한 정보를 �
 
 - **Image 2**
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/4f0d5393-47bd-4771-a2df-7854952c7cd3/9e1d664c-5639-425a-b636-7579d0d01bc3/Untitled.png)
+![halfCircle](/assets/notam/halfCircle.png)
 
 <aside>
 ◾ Turf.js 라이브러리를 사용하여 semicircle(반원) 에서 원하는 도형만큼 제외한 차집합 도식 렌더링(보라색 도형).
@@ -46,9 +64,427 @@ NOTAM은 "Notice to Airmen"의 약자로, 항공 운항에 중요한 정보를 �
 
 - **Image 3**
 
-![image.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/4f0d5393-47bd-4771-a2df-7854952c7cd3/f916868d-edbf-4583-8973-5d0018c85193/image.png)
+![shapes.png](/assets/notam/shapes.png)
 
 <aside>
 ◾ 개별 아이콘 클릭 시 NOTAM 정보 팝업 Overlay표출
 
 </aside>
+
+---
+
+### 코드
+
+**weatherStore.js**
+
+- **getNOTAMs()**
+
+```jsx
+const getNOTAMs = async () => {
+    try {
+      let response = await apiService.getNotams();
+      if (response.DATA.length > 0) {
+        let notamArr = response.DATA;
+        notamArr.forEach(notam => {
+          notams.value[notam.NOTAM_NO] = notam;
+        })
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+```
+
+<aside>
+◾
+
+RestAPI 요청을 통해 NOTAM 정보 fetch
+
+</aside>
+
+- getCenterCoord()
+
+```jsx
+  const getCenterCoord = (item) => {
+    let type = (Object.keys(item.eCoord).length > 0) ? Object.keys(item.eCoord)[0] : 'circle';
+    let exc = (item?.eCoord?.exc) ? true : false;
+    let centerCoord;
+    let parsePoints;
+    let lon, lat;
+    let centerPoint, startPoint, endPoint;
+
+    switch (type) {
+      case 'polygon':
+        if (exc) {
+          console.log("polygon 인데 exc 있을 떄");
+        } else {
+          parsePoints = parsePolygonCoordinates(item.eCoord.polygon, type);
+          centerCoord = calculatePolygonCenter(parsePoints[0]);
+        }
+        break;
+      case 'circle': // circle은 eCoord에 명시된 것, 명시안된 것 두 가지 존재.
+        if (Object.keys(item.eCoord).length > 0) {
+          lon = item.eCoord.circle.centerPoint.lon;
+          lat = item.eCoord.circle.centerPoint.lat;
+        } else {
+          lon = item.qCoord.data.lon;
+          lat = item.qCoord.data.lat;
+        }
+
+        if (exc) {
+          console.log('circle 인데 exc 있을 떄');
+        } else {
+          centerCoord = transform([lon, lat], 'EPSG:4326', 'EPSG:5179')
+        }
+
+        break;
+      case 'semicircle':
+        if (exc) { // exc가 존재하면 해당 영역 제외해주기
+          centerPoint = [item.eCoord.semicircle.centerPoint.lon, item.eCoord.semicircle.centerPoint.lat];
+          startPoint = [item.eCoord.semicircle.startPoint.lon, item.eCoord.semicircle.startPoint.lat];
+          endPoint = [item.eCoord.semicircle.endPoint.lon, item.eCoord.semicircle.endPoint.lat];
+
+          centerPoint = transform(centerPoint, 'EPSG:4326', 'EPSG:5179')
+          centerCoord = centerPoint;
+        } else {
+          //우선 그리기부터 해보자..
+          centerPoint = [item.eCoord.semicircle.centerPoint.lon, item.eCoord.semicircle.centerPoint.lat];
+          startPoint = [item.eCoord.semicircle.startPoint.lon, item.eCoord.semicircle.startPoint.lat];
+          endPoint = [item.eCoord.semicircle.endPoint.lon, item.eCoord.semicircle.endPoint.lat];
+
+          centerPoint = transform(centerPoint, 'EPSG:4326', 'EPSG:5179')
+          centerCoord = centerPoint;
+        }
+        break;
+      case 'polyline':
+        if (exc) {
+          console.log("polyline 인데 exc 있을 떄");
+        } else {
+          centerCoord = parsePolygonCoordinates(item.eCoord.polyline.polygon_centroid, 'line')
+        }
+        break;
+      default:
+        console.log(`Unknown type: ${item.eCoord}`);
+        return;
+    }
+
+    storeMap.goCenter(centerCoord) ;
+  }
+```
+
+<aside>
+◾
+
+BackEnd에서 수신한 도형의 정보에 따라 coordinate 계산
+
+</aside>
+
+- **showNotam()**
+
+```
+const showNotam = async (notamList) => {
+    try {
+      let circleFeatures = [];
+      let iconFeatures = [];
+      let polygonFeatures = [];
+      let polyFeature;   // eCoord 정의된 feature
+      let circleFeature; // eCoord 정의 없는 qCoord 참조 feature
+      let centerCoord;
+      if(notamList.length > 0) {
+        notamList.forEach((ind) => {
+          if (ind.eCoord && Object.keys(ind.eCoord).length > 0) { // eCoord type 정해져있는 애들...
+            [polyFeature, centerCoord] = drawNotamByShape(ind.NOTAM_NO, ind.eCoord, null);
+            if (polyFeature != undefined) polygonFeatures.push(polyFeature);
+          } else {
+            [circleFeature, centerCoord] = drawNotamByShape(ind.NOTAM_NO, null, ind.qCoord);
+            if (circleFeature != undefined) {
+              circleFeatures.push(circleFeature);
+            }
+          }
+          if (centerCoord) {
+            //아이콘 Feature는 공통
+            const iconFeature = new Feature({
+              geometry: new Point([centerCoord[0], centerCoord[1]]),
+              info: ind.FULL_TEXT,
+              notamNo: ind.NOTAM_NO,
+              type: 'notam'
+            });
+
+            iconFeatures.push(iconFeature);
+          }
+        })
+      }
+
+      if (storeMap.getLayer('notamLayer')) {
+        layerGroup.value['notamLayer'].getSource().clear();
+        layerGroup.value['notamLayer'].getSource().addFeatures([...circleFeatures, ...polygonFeatures]); // 새로운 데이터 추가
+
+        if (layerGroup.value['notamClusterLayer']) {
+          const iconSource = new VectorSource({
+            features: iconFeatures
+          });
+
+          const clusterSource = new Cluster({
+            distance: 5, // 클러스터링 거리
+            source: iconSource
+          });
+          layerGroup.value['notamClusterLayer'].setSource(clusterSource);
+        }
+      } else {
+        const vectorSource = new VectorSource({
+          features: [...circleFeatures, ...polygonFeatures]
+        });
+
+        const notamLayer = new VectorLayer({
+          source: vectorSource,
+          zIndex: 3,
+          name: 'notamLayer',
+          style: (feature) => storeMap.layerStyleFunc('notamLayer', feature)
+        });
+
+        storeMap.addLayer('notamLayer', notamLayer);
+
+        // 클러스터링을 위한 아이콘 피처 생성
+        const iconSource = new VectorSource({
+          features: iconFeatures
+        });
+
+        const clusterSource = new Cluster({
+          distance: 5, // 클러스터링 거리
+          source: iconSource
+        });
+
+        const clusterLayer = new VectorLayer({
+          source: clusterSource,
+          zIndex: 3,
+          name: 'notamClusterLayer',
+          style: (feature) => storeMap.layerStyleFunc('notamClusterLayer', feature),
+        });
+
+        storeMap.addLayer('notamClusterLayer', clusterLayer);
+      }
+
+      // if(centerCoord) {
+      //   storeMap.goCenter(centerCoord)
+      // }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+```
+
+<aside>
+◾
+
+fetch한 NOTAM 정보를 읽어 drawNotamByShape 함수호출
+
+</aside>
+
+- **drawNotamByShape()**
+
+NOTAM 정보들을 토대로 각 유형에 맞도록 feature 생성 
+
+```jsx
+ // 도형 타입에 맞게 Feature 생성
+  const drawNotamByShape = (notamNo, eCoord, qCoord) => {
+    let type = (eCoord) ? Object.keys(eCoord)[0] : 'circle';
+    let exc = (eCoord?.exc) ? true : false;
+    let centerCoord;
+    let feature;
+    let parsePoints;
+    let lon, lat, radius;
+    let centerPoint, startPoint, endPoint, angleStart, angleEnd;
+    const numPoints = 200; // Number of points to approximate the semicircle
+    const coordinates = [];
+    let semiCirclePolygon;
+    let angleStep;
+    let excCenterPoint, excRadius, combinedCoords, combinedPolygon, excCoords, excCirclePolygon, difference;
+    let semiCircleCoords = [];
+
+    switch (type) {
+      case 'polygon':
+        if (exc) {
+          console.log("polygon 인데 exc 있을 떄");
+        } else {
+          parsePoints = parsePolygonCoordinates(eCoord.polygon, type);
+          centerCoord = calculatePolygonCenter(parsePoints[0]);
+          feature = new Feature({
+            geometry: new Polygon(
+              parsePoints
+            ),
+          });
+        }
+        break;
+      case 'circle': // circle은 eCoord에 명시된 것, 명시안된 것 두 가지 존재.
+        if (eCoord) {
+          lon = eCoord.circle.centerPoint.lon;
+          lat = eCoord.circle.centerPoint.lat;
+          radius = eCoord.circle.radius;
+        } else {
+          lon = qCoord.data.lon;
+          lat = qCoord.data.lat;
+          radius = qCoord.data.radius;
+        }
+
+        if (exc) {
+          console.log('circle 인데 exc 있을 떄');
+        } else {
+          centerCoord = transform([lon, lat], 'EPSG:4326', 'EPSG:5179')
+          if (radius < 999) { // 일정크기 이상 feature는 아이콘만 표시
+            let rad = nauticalMilesToMeters(radius);
+
+            feature = new Feature({
+              geometry: new Circle([centerCoord[0], centerCoord[1]], rad)
+            });
+
+          }
+        }
+
+        break;
+      case 'semicircle':
+        if (exc) { // exc가 존재하면 해당 영역 제외해주기
+          centerPoint = [eCoord.semicircle.centerPoint.lon, eCoord.semicircle.centerPoint.lat];
+          startPoint = [eCoord.semicircle.startPoint.lon, eCoord.semicircle.startPoint.lat];
+          endPoint = [eCoord.semicircle.endPoint.lon, eCoord.semicircle.endPoint.lat];
+
+          centerPoint = transform(centerPoint, 'EPSG:4326', 'EPSG:5179')
+          centerCoord = centerPoint;
+          startPoint = transform(startPoint, 'EPSG:4326', 'EPSG:5179')
+          endPoint = transform(endPoint, 'EPSG:4326', 'EPSG:5179');
+
+          radius = nauticalMilesToMeters(eCoord.semicircle.radius); // 반지름 미터로 변환
+
+          // Calculate the angle for the start and end points
+          angleStart = Math.atan2(startPoint[1] - centerPoint[1], startPoint[0] - centerPoint[0]);
+          angleEnd = Math.atan2(endPoint[1] - centerPoint[1], endPoint[0] - centerPoint[0]);
+
+          if (eCoord.semicircle.direction === 'CLOCKWISE') {
+            angleStep = (angleStart - angleEnd) / numPoints;
+          } else {
+            angleStep = (angleEnd - angleStart) / numPoints;
+          }
+
+          // 그려져야할 반원 좌표 생성
+          for (let i = 0; i <= numPoints; i++) {
+            const angle = angleStart + i * angleStep;
+            const x = centerPoint[0] + radius * Math.cos(angle);
+            const y = centerPoint[1] + radius * Math.sin(angle);
+            semiCircleCoords.push([x, y]);
+          }
+
+          // Add the center and end point to complete the path
+          semiCircleCoords.push(centerPoint);
+          semiCircleCoords.push(startPoint); // Add start point to close the shape
+
+          if (semiCircleCoords[0][0] !== semiCircleCoords[semiCircleCoords.length - 1][0] ||
+            semiCircleCoords[0][1] !== semiCircleCoords[semiCircleCoords.length - 1][1]) {
+            semiCircleCoords.push(semiCircleCoords[0]);
+          }
+
+          // 제외해야할 exc 원 좌표 생성
+          excCenterPoint = transform([eCoord.exc.circle.centerPoint.lon, eCoord.exc.circle.centerPoint.lat], 'EPSG:4326', 'EPSG:5179');
+          excRadius = nauticalMilesToMeters(eCoord.exc.circle.radius);
+
+          excCoords = [];
+          for (let i = 0; i <= numPoints; i++) {
+            const angle = 2 * Math.PI * i / numPoints;
+            const x = excCenterPoint[0] + excRadius * Math.cos(angle);
+            const y = excCenterPoint[1] + excRadius * Math.sin(angle);
+            excCoords.push([x, y]);
+          }
+
+          // Ensure the polygon is closed
+          if (excCoords[0][0] !== excCoords[excCoords.length - 1][0] ||
+            excCoords[0][1] !== excCoords[excCoords.length - 1][1]) {
+            excCoords.push(excCoords[0]);
+          }
+
+          // Turf.js를 사용하여 반원에서 원을 제외한 영역 생성
+          semiCirclePolygon = turf.polygon([semiCircleCoords]);
+          excCirclePolygon = turf.polygon([excCoords]);
+
+          difference = turf.difference(turf.featureCollection([semiCirclePolygon, excCirclePolygon]));
+
+          // Check if difference result is valid
+          if (!difference || !difference.geometry || !difference.geometry.coordinates.length) {
+            console.error("Invalid result from turf.difference");
+            return;
+          }
+
+          // Feature 생성
+          combinedPolygon = new Polygon(difference.geometry.coordinates);
+          feature = new Feature({
+            geometry: combinedPolygon,
+          });
+
+        } else {
+          //우선 그리기부터 해보자..
+          centerPoint = [eCoord.semicircle.centerPoint.lon, eCoord.semicircle.centerPoint.lat];
+          startPoint = [eCoord.semicircle.startPoint.lon, eCoord.semicircle.startPoint.lat];
+          endPoint = [eCoord.semicircle.endPoint.lon, eCoord.semicircle.endPoint.lat];
+
+          centerPoint = transform(centerPoint, 'EPSG:4326', 'EPSG:5179')
+          centerCoord = centerPoint;
+          startPoint = transform(startPoint, 'EPSG:4326', 'EPSG:5179')
+          endPoint = transform(endPoint, 'EPSG:4326', 'EPSG:5179');
+
+          radius = nauticalMilesToMeters(eCoord.semicircle.radius); // in meters
+
+          // Calculate the angle for the start and end points
+          angleStart = Math.atan2(startPoint[1] - centerPoint[1], startPoint[0] - centerPoint[0]);
+          angleEnd = Math.atan2(endPoint[1] - centerPoint[1], endPoint[0] - centerPoint[0]);
+
+          if (eCoord.semicircle.direction === 'CLOCKWISE') {
+            angleStep = (angleStart - angleEnd) / numPoints;
+          } else {
+            angleStep = (angleEnd - angleStart) / numPoints;
+          }
+
+          // 반원 좌표 생성
+          for (let i = 0; i <= numPoints; i++) {
+            const angle = angleStart + i * angleStep;
+            const x = centerPoint[0] + radius * Math.cos(angle);
+            const y = centerPoint[1] + radius * Math.sin(angle);
+            semiCircleCoords.push([x, y]);
+          }
+
+          // Add the center and end point to complete the path
+          semiCircleCoords.push(centerPoint);
+          semiCircleCoords.push(startPoint); // Add start point to close the shape
+          // Create a polygon from the coordinates
+          semiCirclePolygon = new Polygon([semiCircleCoords]);
+          feature = new Feature({
+            geometry: semiCirclePolygon,
+          })
+
+        }
+        break;
+      case 'polyline':
+        if (exc) {
+          console.log("polyline 인데 exc 있을 떄");
+        } else {
+          feature = new GeoJSON().readFeature(eCoord.polyline.buffered_polyline, {
+            dataProjection: 'EPSG:4326',
+            featureProjection: 'EPSG:5179'
+          });
+
+          // polyline feature의 중심점 구하기
+          // 1. Front-End에서 계산해서 처리
+          // const coordinates = parsePolygonCoordinates(eCoord.polyline.line, 'line');
+          // centerCoord = calculatePolygonCenter(coordinates);
+
+          // 2. Back-End에서 계산된 값 그리기
+          centerCoord = parsePolygonCoordinates(eCoord.polyline.polygon_centroid, 'line')
+        }
+        break;
+      default:
+        console.log(`Unknown type: ${notamNo}, ${type}`);
+    }
+
+    //radius 999같은 것들은 feature 생성안함.
+    if(feature) feature.set('notamNo', notamNo);
+
+    return [feature, centerCoord];
+  }
+```

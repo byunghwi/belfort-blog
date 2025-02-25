@@ -2,6 +2,7 @@ import Container from "@/app/_components/container"
 import { Intro } from "@/app/_components/intro"
 import { HeroPost } from "./_components/hero-post";
 import MoreStories from "@/app/_components/more-stories";
+import SearchPost from "./_components/search-post";
 import { getAllPosts, getIntroducePost } from "@/lib/api";
 
 export default function Index() {
@@ -21,6 +22,7 @@ export default function Index() {
           excerpt={heroPost.excerpt}
           content={heroPost.content} 
         />
+        <SearchPost />
         {morePosts.length > 0 && <MoreStories posts={morePosts}/>}
       </Container>
     </main>

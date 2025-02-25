@@ -8,6 +8,7 @@ type Props = {
   date: string;
   excerpt: string;
   slug: string;
+  className?: string;
 }
 
 export function PostPreview({title, coverImage, date, excerpt, slug}: Props) {

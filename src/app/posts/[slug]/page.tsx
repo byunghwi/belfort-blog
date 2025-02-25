@@ -10,8 +10,10 @@ import PostBody from "@/app/_components/post-body";
 type Params = {
   params: Promise<{slug: string}>;
 }
+
 export default async function Post(props: Params) {
   const params = await props.params;
+  console.log('params:::: ', params);
   const post = getPostBySlug(params.slug);
 
   if(!post) {

@@ -6,9 +6,6 @@ export function Intro() {
         안녕하세요. <br/>
         <span className="text-5xl md:text-[9rem] font-semibold text-gray-600">고병휘</span>입니다.
       </h1>
-      <h4 className="text-center md:text-left text-lg mt-5 md:pl-8">
-        4년차 웹 개발자 입니다.
-      </h4>
     </section>
   )
 }
